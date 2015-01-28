@@ -209,8 +209,17 @@ public class PersistentList<E> {
             nextNode = prevNode.getNext();
         }
         FatNode newNode = new FatNode(curVersion, data);
-        newNode.setNext(nextNode.setPersistentPrev(newNode));
-
+        if (nextNode != null) {
+            newNode.setNext(nextNode.setPersistentPrev(newNode));
+        } else {
+            last.add(newNode);
+        }
+        if (prevNode != null) {
+            newNode.setPrev(prevNode.setPersistentNext(newNode));
+        } else {
+            first.add(newNode);
+        }
+        curVersion++;
     }
 
     //delete last element
@@ -225,6 +234,42 @@ public class PersistentList<E> {
             }
             curVersion++;
         }
+    }
+
+    public void delete(int index) {
+        FatNode curNode = first.get(first.size() - 1);
+        if (curNode == null) {
+            throw new IndexOutOfBoundsException();
+        }
+
+        for (int i = 0; i < index; i++) {
+            curNode = curNode.getNext();
+            if (curNode == null) {
+                throw new IndexOutOfBoundsException();
+            }
+        }
+
+        FatNode prevNode = curNode.getPrev();
+        FatNode nextNode = curNode.getNext();
+
+        if (prevNode != null) {
+            prevNode = prevNode.setPersistentNext(null);
+        }
+        if (nextNode != null) {
+            nextNode = nextNode.setPersistentPrev(null);
+        }
+
+        if (prevNode != null) {
+            prevNode.setNext(nextNode);
+        } else {
+            first.add(nextNode);
+        }
+        if (nextNode != null) {
+            nextNode.setPrev(prevNode);
+        } else {
+            last.add(prevNode);
+        }
+        curVersion++;
     }
 
     //get i-th element of the list of specified version
@@ -250,7 +295,7 @@ public class PersistentList<E> {
                 break;
             }
         }
-        System.out.println(index + " " + version);
+
         //looking for the node with required index
         for (int i = 0; i < index; i++) {
             lastFatNode = lastFatNode.getNext(version);
