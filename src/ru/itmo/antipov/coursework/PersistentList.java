@@ -130,6 +130,7 @@ public class PersistentList<E> {
                 return this;
             } else if (node2 != null) {
                 FatNode newFatNode = new FatNode(curVersion, node2.getData());
+                newFatNode.setPrev(prev);
                 if (node2.getNext() != null) {
                     newFatNode.setNext(node2.getNext().setPersistentPrev(newFatNode));
                     return newFatNode;
@@ -182,9 +183,7 @@ public class PersistentList<E> {
 
     // add element to the specified position
     public void add(E data, int index) {
-        FatNode prevNode = first.get(first.size() - 1);
-
-        if (prevNode == null) {
+        if (first.size() == 0 || first.get(first.size() - 1) == null) {
             if (index == 0) {
                 FatNode node = new FatNode(curVersion, data);
                 first.add(node);
@@ -195,25 +194,25 @@ public class PersistentList<E> {
             }
         }
 
-        FatNode nextNode;
+        FatNode nextNode = first.get(first.size() - 1);
+        FatNode prevNode = null;
+
         for (int i = 1; i < index; i++) {
-            prevNode = prevNode.getNext();
-            if (prevNode == null) {
+            if (nextNode == null) {
                 throw new IndexOutOfBoundsException();
             }
+            prevNode = nextNode;
+            nextNode = nextNode.getNext();
         }
-        if (index == 0) {
-            nextNode = prevNode;
-            prevNode = null;
-        } else {
-            nextNode = prevNode.getNext();
-        }
+
         FatNode newNode = new FatNode(curVersion, data);
+
         if (nextNode != null) {
             newNode.setNext(nextNode.setPersistentPrev(newNode));
         } else {
             last.add(newNode);
         }
+
         if (prevNode != null) {
             newNode.setPrev(prevNode.setPersistentNext(newNode));
         } else {
@@ -236,11 +235,12 @@ public class PersistentList<E> {
         }
     }
 
+    //delete element on the specified index
     public void delete(int index) {
-        FatNode curNode = first.get(first.size() - 1);
-        if (curNode == null) {
+        if (first.size() == 0 || first.get(first.size() - 1) == null) {
             throw new IndexOutOfBoundsException();
         }
+        FatNode curNode = first.get(first.size() - 1);
 
         for (int i = 0; i < index; i++) {
             curNode = curNode.getNext();
@@ -279,18 +279,20 @@ public class PersistentList<E> {
         }
 
         //looking for the first node of the list of the required version
-        FatNode lastFatNode = null;
+        FatNode curNode = null;
         for (FatNode fatNode : first) {
-            if (fatNode == null && Math.max(lastFatNode.vers1, lastFatNode.vers2) == version - 1) {
-                throw new IndexOutOfBoundsException();
-            }
+            //there cannot be two nulls in a row in the list of first nodes
             if (fatNode == null) {
-                continue;
+                if (Math.max(curNode.vers1, curNode.vers2) == version - 1) {
+                    throw  new IndexOutOfBoundsException();
+                } else {
+                    continue;
+                }
             }
             if (fatNode.getVers1() > version) {
                 break;
             }
-            lastFatNode = fatNode;
+            curNode = fatNode;
             if (fatNode.getVers2() > version) {
                 break;
             }
@@ -298,12 +300,12 @@ public class PersistentList<E> {
 
         //looking for the node with required index
         for (int i = 0; i < index; i++) {
-            lastFatNode = lastFatNode.getNext(version);
-            if (lastFatNode == null) {
+            curNode = curNode.getNext(version);
+            if (curNode == null) {
                 throw new IndexOutOfBoundsException();
             }
         }
-        return lastFatNode.getData(version);
+        return curNode.getData(version);
     }
 
 }

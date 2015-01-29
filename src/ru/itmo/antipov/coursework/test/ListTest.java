@@ -61,7 +61,6 @@ public class ListTest {
         boolean flag = false;
         for (int vers = 0; vers < 150; vers++) {
             try {
-//                System.out.println(vers + " " + (101 - Math.abs(vers - 100)));
                 list.get(101 - Math.abs(vers - 100), vers);
             } catch (IndexOutOfBoundsException e) {
                 flag = true;
@@ -90,5 +89,29 @@ public class ListTest {
         for (int i = 60; i < 110; i++) {
             assertTrue(list.get(i, 109) == i - 9);
         }
+    }
+
+    @Test
+    public void test5() {
+        PersistentList<Integer> list = new PersistentList<Integer>();
+        for (int i = 0; i < 100; i++) {
+            list.add(i + 1);
+        }
+        for (int i = 9; i >= 0; i--) {
+            list.add(100 + i, 50);
+        }
+        for (int i = 50; i < 60; i++) {
+            list.delete(50);
+        }
+        for (int i = 0; i < 100; i++) {
+            assertTrue(list.get(i, 119) == i + 1);
+        }
+        boolean flag = false;
+        try {
+            list.get(100, 119);
+        } catch (IndexOutOfBoundsException e) {
+            flag = true;
+        }
+        assertTrue(flag);
     }
 }
